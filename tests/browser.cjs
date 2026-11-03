@@ -11,6 +11,7 @@ const {call,advance} = require('./backend-fixture.cjs');
  let browser;
  try {
  browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
+ const staticContext=await browser.newContext({javaScriptEnabled:false});const staticPage=await staticContext.newPage();await staticPage.goto('http://127.0.0.1:'+server.address().port);assert(await staticPage.locator('#site-password').isVisible(),'password form exists before JavaScript loads');assert(await staticPage.locator('.access-card button').isDisabled());await staticContext.close();
  const errors=[];let identity=0;
  async function player(){const context=await browser.newContext();const id='player-'+(++identity);const token=Buffer.from('{"alg":"HS256","typ":"JWT"}').toString('base64url')+'.'+Buffer.from(JSON.stringify({sub:id,exp:Math.floor(Date.now()/1000)+3600,role:'authenticated'})).toString('base64url')+'.signature';
  await context.route('https://cqxpcuylnarobdkecbfo.supabase.co/**',async route=>{const req=route.request();if(req.method()==='OPTIONS'){await route.fulfill({status:200,headers:{'access-control-allow-origin':'*','access-control-allow-headers':'*'}});return;}
