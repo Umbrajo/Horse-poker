@@ -1,69 +1,63 @@
-# River Club
+# River Club — HORSE Poker
 
-Site statique de poker : solo et tutoriel avec IA, tables Supabase de six places maximum, sept langues. Jetons fictifs uniquement.
+## 🇬🇧 English
 
-## Mettre à jour le site existant
+**Joann Delacroix, original idea and project direction.**
 
-Déployer le serveur **avant** de publier les nouveaux fichiers du site :
+I created this project because I could not find this type of game available to play directly online. It was developed with help from ChatGPT.
 
-1. Supabase → **Edge Functions → Secrets** : ajouter `SITE_PASSWORD` avec le mot de passe choisi. Ne pas mettre ce mot de passe dans GitHub ni `config.js`. Pour le changer, modifier simplement ce secret dans Supabase. Le mot de passe précédent cesse de fonctionner dès les requêtes suivantes ; les joueurs doivent entrer le nouveau. Aucun compte nominatif n’est nécessaire : les sessions anonymes identifient les sièges en ligne, le mot de passe autorise chaque opération serveur. La vérification du mot de passe intervient avant tout appel à Auth ou à la base ; le solo et le tutoriel ne créent aucune session anonyme et ne font aucun appel à Supabase. Le formulaire de mot de passe apparaît uniquement dans l’onglet Multiplayer.
-2. Dans la fonction `poker`, remplacer **index.ts** et **engine.js** par les fichiers de `supabase/functions/poker/`, puis déployer. Conserver **Verify JWT désactivé** : la fonction vérifie elle-même la session Supabase. Les secrets `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` restent côté serveur, fournis par Supabase.
-3. Publier les fichiers statiques sur GitHub Pages après le déploiement de la fonction.
+Play poker solo against AI, learn through the tutorial, or join friends in multiplayer. Available variants include HORSE: Hold’em, Omaha Hi-Lo, Razz, Stud, and Stud Hi-Lo.
 
-Le formulaire de mot de passe protège uniquement l’onglet **Multiplayer** jusqu’à vérification serveur. Le solo et le tutoriel sont immédiatement accessibles, même sans mot de passe ou lorsque Supabase est en pause. Les liens d’invitation ouvrent ce formulaire sans requête automatique ; un ancien salon enregistré ne force pas le changement d’onglet. Les boutons Solo et Tutoriel restent accessibles pendant la saisie et après une erreur de connexion. Le rafraîchissement automatique des sessions Supabase est désactivé : une session est renouvelée uniquement lors d’une action ou d’une actualisation multijoueur, pas pendant le solo ou le tutoriel. Les fichiers statiques d’un dépôt GitHub public restent téléchargeables : cette configuration protège réellement les parties et les actions en ligne, pas la confidentialité du code ni une copie locale du solo. Protéger également les fichiers eux-mêmes nécessiterait un hébergeur avec contrôle d’accès.
+**Practice chips only. No real money.**
 
-Pour un nouveau projet : activer **Authentication → Anonymous Sign-Ins**, appliquer `supabase/migrations/202611030001_rooms.sql`, puis configurer l’URL et la clé **publique** dans `config.js`. Ne jamais utiliser une clé service_role dans le navigateur.
+### Play
 
-## Tables et tournois
+https://umbrajo.github.io/Horse-poker/
 
-- Le créateur choisit la variante, le format de mise, le nombre d’**Adversaires IA** (0 à 5), leur difficulté et le délai entre les mains (0 à 120 secondes), puis crée le salon. Le délai reste modifiable par l’hôte avec le bouton **Appliquer le délai entre les mains**, y compris en cours de partie ; les autres réglages sont figés à la création. Les invités voient le délai mais ne peuvent pas le modifier.
-- Avec **0 IA**, la table attend au moins deux humains pour démarrer. En solo, sélectionner 0 IA affiche une invitation à passer en multijoueur et ne permet pas de démarrer une partie sans adversaire. Le nombre d’IA est exactement celui choisi. Les six places comprennent humains et IA : avec cinq IA, un seul humain peut jouer ; avec quatre IA, deux humains peuvent jouer. Les invités doivent rejoindre avant le démarrage.
-- L’hôte lance la première main. Ensuite, les mains s’enchaînent automatiquement après le délai choisi (cinq secondes par défaut), jusqu’à ce qu’un seul joueur conserve des jetons. Les IA jouent côté serveur, sans recevoir les cartes cachées des adversaires pour leurs décisions.
-- Les navigateurs actualisent leur présence toutes les trois secondes pendant une main, toutes les six secondes dans le salon, et toutes les trois à dix secondes pendant le délai entre les mains. Le délai de distribution est un minimum : la distribution a lieu à la prochaine actualisation reçue. En fin de tournoi, les actualisations s’arrêtent. Une absence de plus de 45 secondes entraîne l’abandon et la perte des jetons restants. Si la table avait plusieurs humains et qu’il n’en reste qu’un connecté, la partie s’arrête et ce dernier est déclaré gagnant. Une table créée avec un humain et des IA continue normalement jusqu’à la victoire finale.
-- **Back to solo** quitte immédiatement la table et abandonne la partie en ligne. Pour une simple reconnexion, recharger la page et rejoindre le même code avant l’expiration du délai. La session du navigateur conserve le siège.
-- La progression et les délais sont traités à la prochaine requête reçue : aucun service permanent ni tâche planifiée n’est nécessaire. Si tous les navigateurs sont fermés, aucune main n’est jouée en arrière-plan.
-- Pour recommencer après la fin du tournoi, créer une nouvelle table. Il n’y a pas de transfert du rôle d’hôte dans le salon d’attente.
+Solo and tutorial modes require no password and remain available when Supabase is paused.
 
-## Mises
+### Private multiplayer
 
-**Fold**, **Check**, **Call**, **Bet** et **Raise** restent en anglais dans toutes les langues.
+Multiplayer uses Supabase and requires a password. I reserve this service for games with friends and may enable or disable it at any time.
 
-- **Fixed limit** : toutes les variantes, blindes 5/10 et mises 10/20.
-- **No-limit** : Hold’em ; montant de Bet/Raise libre entre les bornes autorisées et le tapis.
-- **Pot-limit** : Omaha ; montant de Bet/Raise limité par le pot.
-- Razz, Stud, Stud Eight or Better et HORSE restent en limit fixe.
+### License
 
-Le champ **Bet / Raise to** indique le montant total visé sur le tour de mise, pas le supplément. **Call** paie exactement la différence avec la mise en cours, ou le tapis restant s’il est inférieur. Le serveur vérifie les bornes et le tour de chaque joueur. Les pots secondaires sont gérés par le moteur.
+*This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.*
 
-## Développement et vérifications
+*This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.*
 
-Node 24+ est nécessaire pour les tests ; le site lui-même ne demande aucune compilation.
+*You should have received a copy of the GNU General Public License along with this program. If not, see [https://www.gnu.org/licenses/](https://www.gnu.org/licenses/).*
 
-```sh
-npm ci
-npm test
-python3 -m http.server 4173 --bind 0.0.0.0
-```
+The availability of my private multiplayer service does not change the rights granted by this license. Third-party libraries retain their respective licenses.
 
-Le client Supabase 2.99.1 est inclus dans `vendor/` ; aucune police ni bibliothèque externe n’est téléchargée par le navigateur.
+---
 
-Avec Chromium installé :
+## 🇫🇷 Français
 
-```sh
-CHROMIUM_PATH=/usr/bin/chromium npm run test:browser
-```
+**Joann Delacroix, idée et direction du projet.**
 
-Les tests serveur utilisent une base et une authentification simulées. Les tests navigateur utilisent le véritable SDK Supabase avec des réponses API interceptées et un moteur serveur partagé, sans toucher au projet distant. Ils couvrent le solo et le tutoriel avec Supabase simulé indisponible et sans appels API, la protection du seul onglet Multiplayer, un solo no-limit, les libellés des sept langues et deux navigateurs partageant une table avec une IA. Ils ne constituent pas une validation du déploiement Supabase réel.
+J’ai créé ce projet parce que je ne trouvais pas de version de ce type directement jouable sur Internet. Il a été réalisé avec l’aide de ChatGPT.
 
-Avant publication complète, vérifier sur le vrai projet : mauvais mot de passe refusé, bon mot de passe accepté, création et invitation, cartes privées, IA, mise personnalisée, main suivante automatique, reconnexion et victoire après départ du second humain. Surveiller les quotas Supabase : l’actualisation périodique consomme des invocations Edge Function.
+Jouez au poker en solo contre des IA, découvrez les règles grâce au tutoriel ou retrouvez des amis en multijoueur. Plusieurs variantes sont proposées, dont le HORSE : Hold’em, Omaha Hi-Lo, Razz, Stud et Stud Hi-Lo.
 
+**Jetons fictifs uniquement, sans argent réel.**
 
-## Mettre Supabase en pause et limiter les appels
+### Jouer
 
-Pour un projet **Free** dont le tableau de bord propose cette action : ouvrir **Project Settings → General → Pause project**, puis confirmer. Pour reprendre, utiliser **Restore project** depuis le tableau de bord. Cette opération s’applique au projet entier, pas seulement au poker : le jeu en ligne et la vérification du mot de passe multijoueur sont indisponibles pendant la pause. **Le solo et le tutoriel restent jouables sans Supabase.** Ne pas supprimer le projet pour l’arrêter. Si le forfait ne propose pas la pause, consulter les options du forfait ; il n’existe pas d’interrupteur dans ce site qui garantisse l’arrêt de la facturation du projet.
+https://umbrajo.github.io/Horse-poker/
 
-Les onglets arrêtent les actualisations après trois échecs consécutifs, avec des attentes croissantes avant l’arrêt. Le bouton **Reconnecter / Reconnect** permet un nouvel essai manuel après restauration. Une erreur de mot de passe réaffiche immédiatement le formulaire et arrête les actualisations. Les erreurs ne déclenchent pas de tentatives de connexion en boucle.
+Le solo et le tutoriel sont accessibles sans mot de passe et fonctionnent même lorsque Supabase est en pause.
 
-**Limite importante :** une requête à la fonction publique reste une invocation, même si le mot de passe est refusé. Le nouveau code refuse les mots de passe incorrects **avant** de créer un client serveur, d’appeler Auth ou d’accéder aux salons, et limite le corps des requêtes à 4 Kio ; ces mesures ne sont ni un pare-feu ni une limitation de fréquence distribuée. Le délai de réessai du navigateur peut être contourné par un bot. CORS et la clé publique Supabase ne bloquent pas les clients malveillants.
+### Multijoueur privé
 
-Sans infrastructure supplémentaire, utiliser un mot de passe long et aléatoire, garder les protections et limites de débit proposées par Supabase Auth, surveiller l’usage et les notifications de facturation, puis mettre le projet en pause hors utilisation. Les limites Auth concernent Auth, pas la fonction `poker`. Pour empêcher les tentatives sur le mot de passe de consommer des invocations Supabase, il faut un filtre externe (par exemple un proxy avec limitation de débit/CAPTCHA) **et** bloquer l’accès direct à l’origine ; aucune telle protection n’est configurée par cette version.
+Le multijoueur utilise Supabase et nécessite un mot de passe. Je réserve ce service aux parties avec mes amis et me réserve le droit de l’activer ou de le désactiver à tout moment.
+
+### Licence
+
+*Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier selon les termes de la licence publique générale GNU telle que publiée par la Free Software Foundation, soit la version 3 de la licence, soit (à votre choix) toute version ultérieure.*
+
+*Ce programme est distribué dans l’espoir qu’il sera utile, mais SANS AUCUNE GARANTIE, sans même la garantie implicite de COMMERCIALISABILITÉ ou d’ADÉQUATION À UN USAGE PARTICULIER. Voir la licence publique générale GNU pour plus de détails.*
+
+*Vous devriez avoir reçu une copie de la licence publique générale GNU avec ce programme. Si ce n’est pas le cas, consultez [https://www.gnu.org/licenses/](https://www.gnu.org/licenses/).*
+
+La disponibilité de mon service multijoueur privé ne modifie pas les droits accordés par cette licence. Les bibliothèques tierces conservent leurs licences respectives.
