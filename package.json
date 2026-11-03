@@ -1,0 +1,10 @@
+{
+  "name": "river-club",
+  "private": true,
+  "scripts": {
+    "test": "node tests/engine.cjs && node tests/online.cjs",
+    "test:browser": "node tests/browser.cjs"
+  },
+  "engines": { "node": ">=24" },
+  "devDependencies": { "playwright": "1.64.1" }
+}
