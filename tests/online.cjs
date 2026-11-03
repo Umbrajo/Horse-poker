@@ -1,16 +1,19 @@
 const assert = require('node:assert/strict');
-const {call,ok,rows,advance,setPassword}=require('./backend-fixture.cjs');
+const {call,ok,rows,advance,setPassword,metrics,time}=require('./backend-fixture.cjs');
 (async () => {
+  const before={...metrics};
   assert.equal((await call('alice', { action: 'access', password: '' })).status, 403);
   assert.equal((await call('alice', { action: 'create', variant: 0, password: 'wrong' })).status, 403);
   await ok('alice', { action: 'access' });
+  assert.equal(metrics.authCalls,before.authCalls,'password checks must not call Auth');assert.equal(metrics.clients,before.clients,'password checks must not create a database client');
+  assert.equal((await call('alice',{action:'access',password:'x'.repeat(5000)})).status,413);assert.equal(metrics.clients,before.clients);
   setPassword('rotated');
   assert.equal((await call('alice', { action: 'access' })).status, 403);
   await ok('alice', { action: 'access', password: 'rotated' });
   setPassword('');
   assert.equal((await call('alice', { action: 'access', password: '' })).status, 403);
   setPassword('test-password');
-  assert.equal((await call('bad', { action: 'access' })).status, 401);
+  assert.equal((await call('bad', { action: 'create',variant:0 })).status, 401);
   const a = await ok('alice', { action: 'create', variant: 5, name: 'Alice' });
   assert.equal((await call('eve', { action: 'state', code: a.code })).status, 400);
   const b = await ok('bob', { action: 'join', code: a.code, name: 'Bob' });
@@ -49,6 +52,25 @@ const {call,ok,rows,advance,setPassword}=require('./backend-fixture.cjs');
     const ended=await ok(guest,{action:'leave',code:room.code});
     assert(ended.ended);assert.equal(ended.reason,'Last player connected');
   }
+  for(const cooldown of [0,12,120]){
+    const host='cooldown-host-'+cooldown,guest='cooldown-guest-'+cooldown;
+    const room=await ok(host,{action:'create',variant:0,aiCount:0,cooldownSeconds:cooldown});
+    assert.equal(room.aiCount,0);assert.equal(room.cooldownSeconds,cooldown);
+    assert.equal((await call(host,{action:'start',code:room.code,version:room.version})).status,400,'zero AI requires another human');
+    const join=await ok(guest,{action:'join',code:room.code});
+    assert.equal((await call(guest,{action:'configure',code:room.code,version:join.version,cooldownSeconds:2})).status,400);
+    assert.equal((await call(host,{action:'configure',code:room.code,version:join.version,cooldownSeconds:121})).status,400);
+    let state=await ok(host,{action:'start',code:room.code,version:join.version});
+    assert.equal(state.members.length,2);assert(state.members.every(m=>!m.bot));
+    while(!state.game.finished)state=await ok(state.game.turn===0?host:guest,{action:'act',code:room.code,version:state.version,move:'call'});
+    if(cooldown>0){advance((cooldown-1)*1000); // Keep the other human present while testing long waits.
+      const otherSeat=rows.get(room.code).state.members.find(m=>m.id===guest);otherSeat.seen=time();
+      state=await ok(host,{action:'state',code:room.code});assert.equal(state.game.hand,1);advance(1000);
+    }
+    state=await ok(host,{action:'state',code:room.code});assert.equal(state.game.hand,2,'respect chosen cooldown');
+    state=await ok(host,{action:'configure',code:room.code,version:state.version,cooldownSeconds:7});assert.equal(state.cooldownSeconds,7);
+  }
+  for(const cooldown of [-1,1.5,121,'5'])assert.equal((await call('invalid',{action:'create',variant:0,cooldownSeconds:cooldown})).status,400);
   const mixed = await ok('owner', { action: 'create', variant: 0, aiCount: 4, difficulty: 0 });
   let state = await ok('friend', { action: 'join', code: mixed.code });
   assert.equal((await call('extra', { action: 'join', code: mixed.code })).status, 400);

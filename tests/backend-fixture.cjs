@@ -5,10 +5,12 @@ const { stripTypeScriptTypes } = require('node:module');
 let handler, now = Date.now();
 let password = 'test-password';
 const rows = new Map();
+const metrics={clients:0,authCalls:0};
 class Clock extends Date { constructor(...args) { super(...(args.length ? args : [now])); } static now() { return now; } }
 function createClient() {
+ metrics.clients++;
   return {
-    auth: { getUser: async token => ({ data: { user: token === 'bad' ? null : { id: token } } }) },
+    auth: { getUser: async token => {metrics.authCalls++;return { data: { user: token === 'bad' ? null : { id: token } } };} },
     from: () => {
       let code, version, patch;
       const q = {
@@ -26,7 +28,7 @@ function createClient() {
     }
   };
 }
-const context = vm.createContext({ console, Response, Request, crypto, TextEncoder, Date: Clock, Uint32Array, Uint8Array, createClient,
+const context = vm.createContext({ console, Response, Request, crypto, TextEncoder, TextDecoder, Date: Clock, Uint32Array, Uint8Array, createClient,
   Deno: { env: { get: key => key === 'SITE_PASSWORD' ? password : '' }, serve: h => { handler = h; } } });
 vm.runInContext(fs.readFileSync('supabase/functions/poker/engine.js', 'utf8').replace('export { Poker };', ''), context);
 vm.runInContext(stripTypeScriptTypes(fs.readFileSync('supabase/functions/poker/index.ts', 'utf8')).replace(/^import .*$/gm, '').replace('export function view', 'function view'), context);
@@ -36,4 +38,4 @@ async function call(id, body) {
 }
 async function ok(id, body) { const r = await call(id, body); assert.equal(r.status, 200, JSON.stringify(r.body)); return r.body; }
 
-module.exports={call,ok,rows,setTime:value=>{now=value},advance:ms=>{now+=ms},setPassword:value=>{password=value}};
+module.exports={call,ok,rows,metrics,time:()=>now,setTime:value=>{now=value},advance:ms=>{now+=ms},setPassword:value=>{password=value}};
